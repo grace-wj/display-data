@@ -7,64 +7,88 @@
 body {
     font-family: Arial, sans-serif;
     display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-}
-
-button {
-    padding: 10px;
-    font-size: 16px;
-    font-weight: bold;
-    background-color: lightpink;
-    border-radius: 10px;
-}
-
-#button-container {
-    display: flex;
-    align-items: center;
     justify-content: center;
-    height: 20vh;
+    align-items: center;
+    height: 100vh;
 }
 
-#show-data-btn {
+#filters-container {
     width: 20%;
-    min-width: 200px;
 }
 
 #data-container {
     display: flex;
-    justify-content: center;
-    width: 100%;
+    flex-direction: column;
+    justify-content: space-between;
+    width: 80%;
+    height: 100vh;
 }
 
-#data {
-    display: none;
+/* experiments list styling */
+#experiments-list {
+    display: flex;
     overflow-x: auto;
-    width: 80%;
-    max-width: 100vw;
+    width: 95%;
 
     border: 2px solid darkslategrey;
     border-radius: 10px;
-    padding: 20px;
-    margin-bottom: 50px;
+    margin-top: 20px;
 
     background-color: lightpink;
 }
 
-#data.show {
-    display: flex;
-}
-
 .experiment {
+    flex: 0 0 300px;
+    height: 300px;
+
     border: 2px solid darkslategrey;
     border-radius: 10px;
-    padding: 50px;
-    margin: 20px;
 
+    padding: 20px;
+    margin: 5px;
     background-color: white;
 }
 
-.experiment h2, h3 {
+.experiment-lists {
+    font-size: 10px;
+    display: flex;
+}
+
+#charts-container {
+    display: flex;
+    justify-content: left;
+    width: 100%;
+}
+
+/* filter list styling */
+#filters-container {
+    margin-left: 20px;
+}
+
+.filter-item {
     margin-bottom: 10px;
-    margin-top: 10px;
+}
+
+.filter-label {
+    margin-left: 5px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.range-container {
+    margin-top: 5px;
+    padding: 5px;
+    background: #f8f9fa;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    display: flex;
+    gap: 5px;
+    transition: all 0.3s ease-in-out;
+}
+
+.min-input, .max-input {
+    width: 60px;
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
 }

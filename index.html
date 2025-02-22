@@ -5,14 +5,23 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Display Data</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://d3js.org/d3.v7.min.js"></script>
 </head>
 <body>
-    <div id="button-container">
-        <button id="show-data-btn">Show Data</button>
+    <div id="filters-container">
+        <div id="filters"></div>
+        <button id="apply-filter">Apply Filter</button>
     </div>
     <div id="data-container">
-        <div id="data"></div>
+        <div id="experiments-list"></div>
+        <div id="charts-container">
+            <div id="input-chart"></div>
+            <div id="output-chart"></div>
+        </div>
     </div>
+    <!-- <div id="scatterplot-container">
+        <svg id="scatterplot"></svg>
+    </div> -->
 
     <script src="script.js"></script></body>
 </html>
