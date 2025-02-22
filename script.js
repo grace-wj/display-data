@@ -10,8 +10,8 @@ window.onload = function() {
     .then(data => {
         displayExperiments(data);
         loadFilters(data);
-        document.getElementById("apply-filter").addEventListener("click", () => {
-            applyFilter(data);
+        document.getElementById("apply-filters").addEventListener("click", () => {
+            applyFilters(data);
         });
     })
     .catch(error => console.error("error while fetching data or displaying initial screen:", error));
@@ -35,13 +35,22 @@ function loadFilters(data) {
     const outputs = Object.keys(Object.values(data)[0].outputs);
     const inputs = Object.keys(Object.values(data)[0].inputs);
     
+    const inputFilterDiv = document.getElementById("input-filters");
+    const inputFilterLabel = document.createElement("h4");
+    inputFilterLabel.textContent = "Inputs";
+    inputFilterDiv.appendChild(inputFilterLabel)
     inputs.forEach(input => {createFilterBox(input, true)});
+
+    const outputFilterDiv = document.getElementById("output-filters");
+    const outputFilterLabel = document.createElement("h4");
+    outputFilterLabel.textContent = "Outputs";
+    outputFilterDiv.appendChild(outputFilterLabel)
     outputs.forEach(output => {createFilterBox(output, false)});
 }
 
 /* creates a filter box element for the given property, which is an input if input, else output */
 function createFilterBox(property, input) {
-    const filterDiv = document.getElementById("filters");
+    const filterDiv = document.getElementById(`${input ? "input-filters" : "output-filters"}`);
     const propertyDiv = document.createElement("div");
     propertyDiv.classList.add("filter-item");
 
@@ -82,7 +91,7 @@ function createFilterBox(property, input) {
 }
 
 /* filter experiments based on given selections, then load scatterplot */
-function applyFilter(data) {
+function applyFilters(data) {
     // retrieve all checked output types - filter requirements
     const checkedInputBoxes = document.querySelectorAll(".input-checkbox:checked");
     const checkedOutputBoxes = document.querySelectorAll(".output-checkbox:checked");
@@ -90,7 +99,7 @@ function applyFilter(data) {
     const selectedOutputs = Array.from(checkedOutputBoxes).map(cb => cb.value);
     const selectedProperties = selectedInputs.concat(selectedOutputs);
     if (selectedProperties.length === 0) {
-        alert("no output types were specified");
+        alert("No filters were specified.");
         return;
     }
     const filters = {};
@@ -281,8 +290,8 @@ function createBarChart(containerID, data, title) {
 
     d3.select(`#${containerID}`).html(""); // clear previous chart
     // FIXME: dynamically set chart size 
-    const width = 530;
-    const height = 250;
+    const width = 600;
+    const height = 200;
     const margin = { top: 50, right: 25, bottom: 100, left: 25 };
 
     // FIXME: display the exact value of each bar on hover

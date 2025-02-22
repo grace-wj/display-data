@@ -14,58 +14,19 @@ body {
 /* containers formatting */
 
 #filters-container {
-    margin-left: 20px;
-    width: 20%;
-}
-#data-container {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    width: 80%;
+    padding: 20px;
+    width: 28%;
     height: 100vh;
 }
-#charts-container {
-    display: flex;
-    justify-content: left;
-    width: 100%;
-}
-
-/* filter list styling */
-
-.filter-item {
-    margin-bottom: 10px;
-}
-
-.filter-label {
-    margin-left: 5px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.range-container {
-    margin-top: 5px;
-    padding: 5px;
-    background: #f8f9fa;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    display: flex;
-    gap: 5px;
-    transition: all 0.3s ease-in-out;
-}
-
-.min-input, .max-input {
-    width: 60px;
-    padding: 5px;
-    border: 1px solid #ccc;
-    border-radius: 3px;
-}
-
-/* experiments list styling */
-
 #experiments-list {
     display: flex;
-    overflow-x: auto;
-    width: 95%;
+    flex-direction: column;
+    overflow-y: auto;
+    width: 22%;
+    height: 100vh;
 
     border: 2px solid darkslategrey;
     border-radius: 10px;
@@ -73,6 +34,51 @@ body {
 
     background-color: lightpink;
 }
+#charts-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 50%;
+}
+
+/* filter list styling */
+/* FIXME: display inputs and outputs similarly to the experiment layout, separating types */
+#input-filters {
+    height: 500px;
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+#output-filters {
+    height: 150px;
+    overflow-y: auto;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+.filter-label {
+    margin-left: 5px;
+    cursor: pointer;
+}
+
+.filter-item {
+    display: flex;
+    align-items: center;
+    gap: 5px; /* Adds spacing between elements */
+    margin-bottom: 5px;
+}
+.range-container {
+    display: flex;
+    gap: 5px; /* Space between min and max inputs */
+}
+
+.min-input, .max-input {
+    width: 60px; /* Adjust width as needed */
+    height: 16px;
+    padding: 5px;
+}
+
+/* experiments list styling */
 
 .experiment {
     flex: 0 0 300px;
