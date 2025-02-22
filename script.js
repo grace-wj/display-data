@@ -17,6 +17,19 @@ window.onload = function() {
     .catch(error => console.error("error while fetching data or displaying initial screen:", error));
 }
 
+// FIXME: figure out how to not hard code this
+const inputTypesDict = {
+    "Polymer" : ["1", "2", "3", "4"],
+    "Carbon Black": ["High Grade", "Low Grade"],
+    "Silica Filler": ["1", "2"],
+    "Plasticizer": ["1", "2", "3"],
+    "Antioxidant": [],
+    "Coloring Pigment": [],
+    "Co-Agent": ["1", "2", "3"],
+    "Curing": ["Agent 1", "Agent 2"],
+    "Oven Temperature": []
+};
+
 /* load the filter selection menu, checkboxes and range inputs */
 function loadFilters(data) {
     const outputs = Object.keys(Object.values(data)[0].outputs);
@@ -122,6 +135,7 @@ function applyFilter(data) {
 
 /* function to visually display the experiment data */
 function displayExperiments(data, filter = false, displayList = []) {
+    // FIXME: add "number of matching experiments"
     const listDiv = document.getElementById("experiments-list");
     listDiv.innerHTML = ""; // clear previous display
 
@@ -134,23 +148,35 @@ function displayExperiments(data, filter = false, displayList = []) {
 
             const experimentTitle = document.createElement("h3");
             experimentTitle.textContent = experimentIdToName(experiment);
-
-            const experimentLists = document.createElement("div");
-            experimentLists.classList.add("experiment-lists")
-
-            const inputsList = listData("inputs:", data[experiment].inputs);
-            const outputsList = listData("outputs:", data[experiment].outputs);
-
             experimentDiv.appendChild(experimentTitle);
-            experimentDiv.appendChild(experimentLists);
-            experimentLists.appendChild(inputsList);
-            experimentLists.appendChild(outputsList);
+
+            const outputsContainer = createOutputList(data[experiment].outputs);
+            // outputsContainer.classList.add("experiment-outputs");
+            experimentDiv.append(outputsContainer);
+
+            const displayInputsBtn = document.createElement("p");
+            displayInputsBtn.classList.add("display-inputs-btn");
+            displayInputsBtn.textContent = "Display Inputs";
+            experimentDiv.append(displayInputsBtn);
+
+            const inputsContainer = createInputList(data[experiment].inputs);
+            inputsContainer.classList.add("experiment-inputs");
+            experimentDiv.append(inputsContainer);
 
             // click event listener to show the experiment data bar charts
             experimentDiv.addEventListener("click", () => {
                 displayBarCharts(data, [experiment]);
-                // createBarChart(data, [experiment], "input-chart", "Inputs");
-                // createBarChart(data, [experiment], "output-chart", "Outputs");
+            });
+
+            displayInputsBtn.addEventListener("click", () => {
+                // show inputs
+                if (displayInputsBtn.textContent == "Hide Inputs") {
+                    displayInputsBtn.textContent = "Display Inputs";
+                    inputsContainer.classList.remove("show");
+                } else {
+                    displayInputsBtn.textContent = "Hide Inputs";
+                    inputsContainer.classList.add("show");
+                }
             });
 
             listDiv.appendChild(experimentDiv);
@@ -163,23 +189,64 @@ function displayExperiments(data, filter = false, displayList = []) {
     }
 }
 
-/* data display function to create input/output lists */
-function listData(datatype, obj) {
-    const datatypeDiv = document.createElement("div");
-    const dataTypeTitle = document.createElement("h4");
-    dataTypeTitle.textContent = datatype;
-    datatypeDiv.append(dataTypeTitle)
+function createOutputList(outputData) {
+    // FIXME: handle malformed data here
+    const outputsContainer = document.createElement("div");
 
-    const list = document.createElement("ul");
-    
-    // add each data entry as element to the resulting list
-    Object.entries(obj).forEach(([key, value]) => {
-        const listEntry = document.createElement("li");
-        listEntry.textContent = `${key}: ${value}`;
-        list.appendChild(listEntry);
+    Object.entries(outputData).forEach(([key, value]) => {
+        const outputEntry = document.createElement("div");
+        outputEntry.classList.add("property-entry");
+        
+        const outputType = document.createElement("h4");
+        outputType.textContent = key;
+        outputEntry.append(outputType);
+
+        const outputValue = document.createElement("p");
+        outputValue.textContent = value;
+        outputEntry.append(outputValue);
+
+        outputsContainer.append(outputEntry);
     });
-    datatypeDiv.appendChild(list)
-    return datatypeDiv;
+    return outputsContainer;
+}
+function createInputList(inputData) {
+    // FIXME: handle malformed data here
+    inputsContainer = document.createElement("div");
+    Object.entries(inputTypesDict).forEach(([type, valueArr]) => {
+        const typeEntry = document.createElement("div");
+
+        const inputType = document.createElement("h4");
+        inputType.textContent = type;
+        typeEntry.append(inputType);
+
+        if (valueArr.length == 0) {
+            const inputValue = document.createElement("p");
+            inputValue.textContent = inputData[type];
+            typeEntry.classList.add("property-entry");
+            typeEntry.append(inputValue);
+        }
+
+        inputsContainer.append(typeEntry);
+
+        valueArr.forEach(typeValue => {
+            const inputEntry = document.createElement("div");
+            inputEntry.classList.add("property-entry");
+            inputEntry.classList.add("subproperty-entry");
+
+            const typeValueName = document.createElement("p");
+            typeValueName.textContent = typeValue;
+            inputEntry.append(typeValueName);
+
+            const fullName = type + " " + typeValue;
+            const inputValue = document.createElement("p");
+            inputValue.textContent = inputData[fullName];
+            inputEntry.append(inputValue);
+
+            inputsContainer.append(inputEntry);
+        });
+    });
+    return inputsContainer;
+
 }
 
 /* create input/output experiment bar charts */
@@ -212,14 +279,13 @@ function createBarChart(containerID, data, title) {
     }
     // FIXME: display outlier values separately
 
-    console.log(data);
     d3.select(`#${containerID}`).html(""); // clear previous chart
     // FIXME: dynamically set chart size 
     const width = 530;
     const height = 250;
     const margin = { top: 50, right: 25, bottom: 100, left: 25 };
-    // const margin = { top: 40, right: 30, bottom: 100, left: 100 };
 
+    // FIXME: display the exact value of each bar on hover
     // create SVG container in the given container element
     const svg = d3.select(`#${containerID}`)
         .append("svg")
