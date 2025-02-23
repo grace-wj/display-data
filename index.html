@@ -13,8 +13,21 @@
         <div id="output-filters"></div>
         <button id="apply-filters">Apply Filters</button>
     </div>
-    <div id="experiments-list"></div>
+    <div id="experiments-container">
+        <div id="experiments-count"></div>
+        <div id="experiments-list"></div>
+    </div>
     <div id="charts-container">
+        <div id="selection-menu">
+            <label for="compare-choice-1">Compare</label>
+            <select id="compare-choice-1">
+                <option value="" disabled selected hidden>-- Select an Experiment --</option>
+            </select>
+            <label for="compare-choice-2">and</label>
+            <select id="compare-choice-2">
+                <option value="" disabled selected hidden>-- Select an Experiment --</option>
+            </select>
+        </div>
         <div id="input-chart"></div>
         <div id="output-chart"></div>
     </div>

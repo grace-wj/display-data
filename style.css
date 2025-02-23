@@ -18,21 +18,14 @@ body {
     flex-direction: column;
     justify-content: space-between;
     padding: 20px;
-    width: 28%;
+    width: 30%;
     height: 100vh;
 }
-#experiments-list {
+#experiments-container {
     display: flex;
     flex-direction: column;
-    overflow-y: auto;
-    width: 22%;
+    width: 20%;
     height: 100vh;
-
-    border: 2px solid darkslategrey;
-    border-radius: 10px;
-    margin-top: 20px;
-
-    background-color: lightpink;
 }
 #charts-container {
     display: flex;
@@ -79,12 +72,26 @@ body {
 }
 
 /* experiments list styling */
-
-.experiment {
-    flex: 0 0 300px;
-    height: 300px;
+#experiments-count {
+    font-weight: bold;
+    display: flex;
+    align-items: center;
+    margin-top: 20px;
+    margin-bottom: 5px;
+}
+#experiments-list {
+    display: flex;
+    flex-direction: column;
     overflow-y: auto;
+    width: 100%;
+    margin-bottom: 20px;
 
+    border: 2px solid darkslategrey;
+    border-radius: 10px;
+
+    background-color: lightpink;
+}
+.experiment {
     border: 2px solid darkslategrey;
     border-radius: 10px;
 
@@ -92,25 +99,39 @@ body {
     margin: 5px;
     background-color: white;
 }
-
-.experiment-inputs {
-    display: none;
+.dropdown-content {
+    height: 0;
+    overflow: hidden;
+    transition: height 0.3s ease-out;
 }
-
-.show {
-    display: block;
-}
-
-.display-inputs-btn {
+.dropdown-btn {
+    font-weight: bolder;
+    padding-top: 5px;
     cursor: pointer;
+    border-bottom: 1px solid #ccc;
+    margin-top: 10px;
 }
-
 .property-entry {
+    padding-top: 5px;
+    margin-left: 10px;
     display: flex;
     justify-content: space-between;
     border-bottom: 1px solid #ccc;
 }
-
+.dropdown-content p {
+    color: darkslategrey;
+}
+.type-entry {
+    margin-top: 5px;
+    margin-left: 10px;
+    border-bottom: 2px solid #ccc;
+}
 .subproperty-entry {
     padding-left: 20px;
+}
+
+/* charting selection menu */
+
+#selection-menu {
+    margin-top: 20px;
 }
