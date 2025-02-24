@@ -8,10 +8,9 @@ body {
     justify-content: center;
     align-items: center;
     height: 100vh;
-    color: #383838;
-}
-body, button, select {
+    overflow: hidden;
     font-family: "jali-latin-variable", sans-serif;
+    color: #383838;
 }
 
 /* containers formatting */
@@ -20,25 +19,25 @@ body, button, select {
     flex-direction: column;
     justify-content: space-between;
     align-items: center;
-    padding: 30px;
     width: 25%;
     height: 100vh;
+    padding: 30px;
 }
 #experiments-container {
-    padding: 30px;
-    padding-left: 0;
     display: flex;
     flex-direction: column;
     width: 20%;
     height: 100vh;
+    padding: 30px;
+    padding-left: 0;
 }
 #charts-container {
-    padding-top: 30px;
     display: flex;
     flex-direction: column;
     align-items: center;
     width: 55%;
     height: 100vh;
+    padding-top: 30px;
 }
 /* remove charts from layout when window is too narrow */
 @media (max-width: 1200px) {
@@ -61,7 +60,6 @@ body, button, select {
     min-height: 40px;
     width: 100%;
     border-radius: 7px;
-
     cursor: pointer;
     font-size: 17px;
     color: white;
@@ -71,29 +69,25 @@ body, button, select {
     margin-top: 20px;
     margin-bottom: 20px;
     overflow-y: auto;
-    border: 1px solid #b2b2b2;
-    border-radius: 5px;
 }
 #output-filters {
     width: 100%;
-    min-height: 130px;
+    min-height: 125px;
     overflow-y: hidden;
+}
+#input-filters, #output-filters {
     border: 1px solid #b2b2b2;
-    border-radius: 5px;
+    border-radius: 7px;
 }
 .filter-option {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-left: 10px;
-    padding-top: 4px;
-    padding-bottom: 3px;
-    border-bottom: 1px dotted #b2b2b2;
 }
-.filter-type {
+.filter-option, .filter-type {
+    margin-left: 10px;
     padding-top: 4px;
     padding-bottom: 3px;
-    margin-left: 10px;
     border-bottom: 1px dotted #b2b2b2;
 }
 .filter-subtype {
@@ -122,30 +116,26 @@ body, button, select {
 
 /* experiments list styling */
 #experiments-count {
-    min-height: 40px;
     display: flex;
     justify-content: center;
     align-items: center;
-
-    font-size: 17px;
+    min-height: 40px;
     color: #919191;
 }
 #experiments-list {
     display: flex;
     flex-direction: column;
-    overflow-y: auto;
     width: 100%;
     margin-top: 20px;
+    overflow-y: auto;
     border-top: 1px dotted #b2b2b2;
     border-bottom: 1px dotted #b2b2b2;
     border-radius: 10px;   
 }
-#experiments-list::-webkit-scrollbar {
+#experiments-list::-webkit-scrollbar, #input-filters::-webkit-scrollbar {
     display: none;
 }
 .experiment {
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
-    border-radius: 10px;
     padding: 20px;
     margin: 5px;
 }
@@ -160,8 +150,8 @@ body, button, select {
 .dropdown-btn {
     display: flex;
     padding-bottom: 5px;
-    cursor: pointer;
     margin-top: 10px;
+    cursor: pointer;
     position: relative;
 }
 .dropdown-btn::after {
@@ -181,14 +171,14 @@ body, button, select {
 .dropdown-btn.expanded::after {
     transform: rotate(-45deg);
 }
-.dropdown-content p {
+.dropdown-content {
     color: #919191;
 }
-.property-entry {
-    padding-top: 5px;
-    margin-left: 10px;
+.value-entry {
     display: flex;
     justify-content: space-between;
+    padding-top: 5px;
+    margin-left: 10px;
     border-bottom: 1px dotted #b2b2b2;
 }
 .type-entry {
@@ -196,21 +186,20 @@ body, button, select {
     margin-left: 10px;
     border-bottom: 1px dotted #b2b2b2;
 }
-.subproperty-entry {
+.subtype-value-entry {
     padding-left: 20px;
 }
 
 /* chart container styling */
+#selection-menu {
+    padding-bottom: 50px;
+    height: 10%;
+}
 #input-chart, #output-chart {
     width: 100%;
     display: flex;
     justify-content: center;
 }
-#selection-menu {
-    padding-bottom: 50px;
-    height: 10%;
-}
-
 .compare-label {
     margin-left: 20px;
     margin-right: 20px;
@@ -220,14 +209,18 @@ select {
     width: 250px;
     appearance: none;
     border: none;
-    border-radius: 10px;
     padding: 10px 10px;
     font-size: 16px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     cursor: pointer;
     border: 2px solid rgba(0, 0, 0, 0);
-    
     color: #b2b2b2;
+}
+select, .experiment {
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+select:focus {
+    outline: none; 
 }
 #compare-choice-1:hover {
     border: 2px solid #4ea6fb;
@@ -235,9 +228,6 @@ select {
 #compare-choice-2:hover {
     border: 2px solid #ed5186;
 }
-select:focus {
-    outline: none; 
-  }
 .select-wrapper {
     position: relative;
     display: inline-block;
@@ -252,20 +242,5 @@ select:focus {
     position: absolute;
     right: 15px;
     top: 32%;
-
     pointer-events: none;
-}
-/* 
-select {
-    appearance: none;
-    border: 1px solid #ccc;
-    border-radius: 5px;
-    padding: 8px 12px;
-    font-size: 16px;
-    cursor: pointer;
-} */
-
-/* Define the clip path in CSS */
-.clip-top-rounded {
-    clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%);
 }

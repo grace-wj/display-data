@@ -8,17 +8,19 @@ window.onload = function() {
         return response.json(); // parse json data as a JS object
     })
     .then(data => {
-        displayExperiments(data, Object.keys(data));
-        updateBarCharts(data, Object.keys(data));
+        // load initial screen
+        allExperiments = Object.keys(data);
+        currFilteredIDs = allExperiments;
+        displayExperiments(data, allExperiments);
+        updateBarCharts(data, allExperiments);
         loadFilterMenu(data);
-        loadCompareMenu(data, Object.keys(data));
-        currFilteredIDs = Object.keys(data);
+        loadCompareMenu(data, allExperiments);
 
     })
     .catch(error => console.error("error while fetching data or displaying initial screen:", error));
 }
 
-// FIXME: figure out how to not hardcode this
+/* map input types to their subtypes */
 const inputTypesDict = {
     "Polymer" : ["1", "2", "3", "4"],
     "Carbon Black": ["High Grade", "Low Grade"],
@@ -31,11 +33,11 @@ const inputTypesDict = {
     "Oven Temperature": []
 };
 
-// global color scheme [primary, secondary, accent, lines]
+/* global color scheme [primary, secondary, accent, lines] */
 const colorScheme = ["#4ea6fb", "#ed5186", "#027bff", "#b2b2b2"];
 
-// store the current filtered experiment ids globally, update when apply filters is run
-var currFilteredIDs = [];
+var allExperiments; // for quick and easy access, a list of all the experiments
+var currFilteredIDs; // store the current filtered experiment ids globally, update when apply filters is run
 
 /* load the selection options for comparing two experiments */
 function loadCompareMenu(data, experimentIDs) {
@@ -44,13 +46,12 @@ function loadCompareMenu(data, experimentIDs) {
     createSelectionDropdown(choice1, data, experimentIDs);
     createSelectionDropdown(choice2, data, experimentIDs);
 }
-
 /* create a selection dropdown within container using options from experimentIDs */
 function createSelectionDropdown(container, data, experimentIDs) {
     const avgOption = document.createElement("option");
     avgOption.text = "Filtered Average";
     avgOption.value = "Filtered Average";
-    container.appendChild(avgOption);
+    container.appendChild(avgOption); // filtered average option is available as default
     experimentIDs.forEach(experiment => {
         let option = document.createElement("option");
         option.text = experimentIdToName(experiment);
@@ -63,17 +64,15 @@ function createSelectionDropdown(container, data, experimentIDs) {
         } else {
             container.style.color = colorScheme[3];
         }
-        updateBarCharts(data, currFilteredIDs);
+        updateBarCharts(data, currFilteredIDs); // when an option is selected, bar charts are updated
     });
 }
-
 /* load the filter selection menu, checkboxes and range inputs */
 function loadFilterMenu(data) {
     loadInputFilters();
     loadOutputFilters(Object.keys(Object.values(data)[0].outputs));
     const applyFiltersBtn = document.getElementById("apply-filters-btn");
     applyFiltersBtn.style.backgroundColor = colorScheme[2];
-    // applyFiltersBtn.style.background = `linear-gradient(135deg, ${colorScheme[0]}, ${colorScheme[2]}`;
     applyFiltersBtn.addEventListener("click", () => {
         applyFilters(data);
     });
@@ -82,10 +81,8 @@ function loadFilterMenu(data) {
 function loadInputFilters() {
     const filterDiv = document.getElementById("input-filters");
     Object.entries(inputTypesDict).forEach(([type, valueArr]) => {
-        // create header entry to specify following input type
-        const typeLine = document.createElement("div");
-        // if this type only has one subtype, then add a checkbox and range
-        if (valueArr.length == 0) {
+        const typeLine = document.createElement("div"); // create a type header for this input type
+        if (valueArr.length == 0) { // if this type only has one subtype, then it's a type header AND option
             createFilterBox(type, type, typeLine, true);
             typeLine.classList.add("filter-option");
         } else {
@@ -95,15 +92,12 @@ function loadInputFilters() {
         }
         typeLine.classList.add("filter-type");
         filterDiv.append(typeLine);
-        // for each subtype of this type, add a checkbox and range
-        valueArr.forEach(typeValue => {
+        valueArr.forEach(typeValue => { // each subtype is an option - create filterbox
             const optionLine = document.createElement("div");
             optionLine.classList.add("filter-option");
             optionLine.classList.add("filter-subtype");
-            
             const fullName = type + " " + typeValue;
             createFilterBox(typeValue, fullName, optionLine, true);
-
             filterDiv.append(optionLine);
         });
     });
@@ -111,7 +105,7 @@ function loadInputFilters() {
 /* loads the output selection menu */
 function loadOutputFilters(outputTypes) {
     const filterDiv = document.getElementById("output-filters");
-    outputTypes.forEach(type => {
+    outputTypes.forEach(type => { // each output type is an type header and option - create filterbox
         const typeLine = document.createElement("div");
         createFilterBox(type, type, typeLine, false);
         typeLine.classList.add("filter-option");
@@ -121,68 +115,57 @@ function loadOutputFilters(outputTypes) {
 }
 /* creates a filter box element for the given property, which is an input if input, else output */
 function createFilterBox(displayName, fullName, container, input) {
+    /* create and add checkbox, label, range container, and min/max inputs */
     const labelCheckbox = document.createElement("div");
-
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
     checkbox.value = fullName;
     checkbox.classList.add(input ? "input-checkbox" : "output-checkbox", "filter-checkbox");
-
     const label = document.createElement("label");
     label.textContent = displayName;
     label.classList.add("filter-label");
-
     const rangeContainer = document.createElement("div");
     rangeContainer.classList.add("range-container");
     rangeContainer.style.display = "none";
-
     const minInput = document.createElement("input");
     minInput.type = "number";
     minInput.placeholder = "Min";
     minInput.classList.add("min-input");
-
     const maxInput = document.createElement("input");
     maxInput.type = "number";
     maxInput.placeholder = "Max";
     maxInput.classList.add("max-input");
-
     rangeContainer.appendChild(minInput);
     rangeContainer.appendChild(maxInput);
-    
     labelCheckbox.appendChild(checkbox);
     labelCheckbox.appendChild(label);
-
     container.appendChild(labelCheckbox);
     container.appendChild(rangeContainer);
 
-    // hide range inputs when checkbox is not checked
-    checkbox.addEventListener("change", () => {
+    checkbox.addEventListener("change", () => { // hide range inputs when checkbox is not checked
         rangeContainer.style.display = checkbox.checked ? "flex" : "none";
     });
 }
-/* filter experiments based on given selections, then load scatterplot */
+/* filters experiments based on given selections, then updates experiment list and bar charts */
 function applyFilters(data) {
-    // retrieve all checked output types - filter requirements
+    /* retrieve all checked checkbox values - selected filters to be applied */
     const checkedInputBoxes = document.querySelectorAll(".input-checkbox:checked");
     const checkedOutputBoxes = document.querySelectorAll(".output-checkbox:checked");
     const selectedInputs = Array.from(checkedInputBoxes).map(cb => cb.value);
     const selectedOutputs = Array.from(checkedOutputBoxes).map(cb => cb.value);
     const selectedProperties = selectedInputs.concat(selectedOutputs);
-    if (selectedProperties.length === 0) {
-        displayExperiments(data, Object.keys(data));
-        updateBarCharts(data, Object.keys(data));
+    if (selectedProperties.length === 0) { // if no filter selections, then default to displaying all experiments
+        currFilteredIDs = allExperiments;
+        displayExperiments(data, allExperiments);
+        updateBarCharts(data, allExperiments);
         return;
     }
-    const filters = {};
+    const filters = {}; // store specified range for each filter
     selectedProperties.forEach(property => {
-         // only consider checked boxes
-        const container = document.querySelector(`input.filter-checkbox[value="${property}"]`).parentElement.parentElement;
-        console.log(container);
-        
-        // set max and min if given, else default values
+        const container = document.querySelector(`input.filter-checkbox[value="${property}"]`).parentElement.parentElement; // retrieve corresp. option element
+        /* set max and min if given, else default values */
         var min = parseFloat(container.querySelector(".min-input").value); 
         var max = parseFloat(container.querySelector(".max-input").value); 
-
         if (isNaN(min)) {
             min = 0;
         }
@@ -191,11 +174,9 @@ function applyFilters(data) {
         }
         filters[property] = { min, max };
     });
-
-    // collect all experimentIDs that match the filters
-    const filteredExperimentIDs = Object.entries(data)
+    const filteredExperimentIDs = Object.entries(data) // collect matching experimentIDs
         .filter(([experimentID, experimentData]) => {
-            // Filter function to return whether experiment data matches all specified ranges
+            /* filter function - returns true if experiment data matches all ranges */
             const inputsMatch = selectedInputs.every(input => {
                 const inputVal = experimentData.inputs[input];
                 const { min, max } = filters[input];
@@ -208,40 +189,37 @@ function applyFilters(data) {
             });
             return inputsMatch && outputsMatch;
         })
-        .map(([experimentID]) => experimentID);
+        .map(([experimentID]) => experimentID); // only collect IDs, not data
 
+    /* update experiment list and bar chart displays */
     currFilteredIDs = filteredExperimentIDs;
-    displayExperiments(data, filteredExperimentIDs); // re-display filtered experiments
-    updateBarCharts(data, filteredExperimentIDs); // re-chart average of filtered experiments
+    displayExperiments(data, filteredExperimentIDs);
+    updateBarCharts(data, filteredExperimentIDs);
 }
-/* function to visually display the experiment data */
+/* displays the experiment list */
 function displayExperiments(data, experimentIDs) {
     const listDiv = document.getElementById("experiments-list");
     listDiv.innerHTML = ""; // clear previous display
-
+    const expCount = document.getElementById("experiments-count");
+    expCount.textContent = `${experimentIDs.length} matching experiments:`;
     if (experimentIDs.length == 0) {
         alert("no matching experiments found.");
         return;
     }
-    const expCount = document.getElementById("experiments-count");
-    expCount.textContent = `${experimentIDs.length} matching experiments:`;
-
+    /* for each experiment, create an experiment element and add to list */
     experimentIDs.forEach(experiment => {
         const experimentDiv = document.createElement("div");
         experimentDiv.classList.add("experiment");
-
         const experimentTitle = document.createElement("h4");
         experimentTitle.textContent = experimentIdToName(experiment);
         experimentTitle.classList.add('experiment-title');
         experimentDiv.appendChild(experimentTitle);
-
         addDropdown(experimentDiv, "Inputs", createInputList(data[experiment].inputs));
         addDropdown(experimentDiv, "Outputs", createOutputList(data[experiment].outputs));
-
         listDiv.appendChild(experimentDiv);
     });
 }
-/* create dropdown option with title/content and add to experiment */
+/* creates dropdown option with title (input/output) and content and adds to experimentDiv */
 function addDropdown(experimentDiv, title, content) {
     const dropdownBtn = document.createElement("p");
     dropdownBtn.classList.add("dropdown-btn");
@@ -249,79 +227,69 @@ function addDropdown(experimentDiv, title, content) {
     experimentDiv.append(dropdownBtn);
     content.classList.add("dropdown-content");
     experimentDiv.append(content);
-
-    // dynamically adjust dropdown content height on click
-    dropdownBtn.addEventListener("click", () => {
+    dropdownBtn.addEventListener("click", () => { // dynamically adjust dropdown content height on click
         if (content.style.height) {
             content.style.height = null;
             dropdownBtn.classList.remove("expanded");
-
         } else {
             content.style.height = content.scrollHeight + "px";
             dropdownBtn.classList.add("expanded");
-
         }
     });
 }
+/* creates the formatted inputs list for each experiment element, to be shown on dropdown */
 function createInputList(inputData) {
-    // FIXME: handle malformed data here
+    if (!inputData || typeof inputData != "object") { // error if inputData is invalid
+        console.error("createInputList failed: Invalid or missing inputData", inputData);
+        return document.createElement("div");
+    }
     inputsContainer = document.createElement("div");
-
     Object.entries(inputTypesDict).forEach(([type, valueArr]) => {
-        // create header entry to specify following input type
-        const typeEntry = document.createElement("div");
-        const inputType = document.createElement("p");
-        inputType.textContent = type;
-        typeEntry.append(inputType);
-
-        // if this type only has one subtype, then use type name to find the sole value
-        if (valueArr.length == 0) {
+        const typeEntry = document.createElement("div"); // create a type header for this input type
+        if (valueArr.length == 0) { // if this type only has one subtype, then it's a type header AND has a value
+            const inputType = document.createElement("p");
             const inputValue = document.createElement("p");
+            inputType.textContent = type;
             inputValue.textContent = inputData[type];
-            typeEntry.classList.add("property-entry");
-            typeEntry.classList.add("type-entry"); // these entries have both property and type class
+            typeEntry.classList.add("value-entry");
+            typeEntry.append(inputType);
             typeEntry.append(inputValue);
+        } else {
+            typeEntry.textContent = type;
         }
         typeEntry.classList.add("type-entry");
         inputsContainer.append(typeEntry);
-
-        // for each subtype of this type, reconstruct full type name to find value, then add entry
-        valueArr.forEach(typeValue => {
-            const inputEntry = document.createElement("div");
-            inputEntry.classList.add("property-entry");
-            inputEntry.classList.add("subproperty-entry");
-
-            const typeValueName = document.createElement("p");
-            typeValueName.textContent = typeValue;
-            inputEntry.append(typeValueName);
-
-            const fullName = type + " " + typeValue;
+        valueArr.forEach(subType => { // each subtype has a value - create/add entry
+            const subtypeEntry = document.createElement("div");
+            subtypeEntry.classList.add("value-entry");
+            subtypeEntry.classList.add("subtype-value-entry");
+            const subTypeName = document.createElement("p");
+            subTypeName.textContent = subType;
+            subtypeEntry.append(subTypeName);
+            const fullName = `${type} ${subType}`; // reconstruct full name to retreve data
             const inputValue = document.createElement("p");
             inputValue.textContent = inputData[fullName];
-            inputEntry.append(inputValue);
-
-            inputsContainer.append(inputEntry);
+            subtypeEntry.append(inputValue);
+            inputsContainer.append(subtypeEntry);
         });
     });
     return inputsContainer;
 }
 function createOutputList(outputData) {
-    // FIXME: handle malformed data here
+    if (!outputData || typeof outputData != "object") { // error if outputData is invalid
+        console.error("createOutputList failed: Invalid or missing outputData", outputData);
+        return document.createElement("div");
+    }
     const outputsContainer = document.createElement("div");
-
-    // for each output type/value pair, create and add entry to list
-    Object.entries(outputData).forEach(([key, value]) => {
+    Object.entries(outputData).forEach(([key, value]) => { // each output is a type header AND has a value - create/add entry
         const outputEntry = document.createElement("div");
-        outputEntry.classList.add("property-entry");
-        
+        outputEntry.classList.add("value-entry");
         const outputType = document.createElement("p");
         outputType.textContent = key;
         outputEntry.append(outputType);
-
         const outputValue = document.createElement("p");
         outputValue.textContent = value;
         outputEntry.append(outputValue);
-
         outputsContainer.append(outputEntry);
     });
     return outputsContainer;
@@ -339,14 +307,9 @@ function experimentIdToName(experimentID) {
     return `Experiment ${Number} (${Month}/${Day}/${Year})`;;
 }
 
-/* returns the average data of a list of experiments */
+/* returns the average rounded data of a list of experiments */
 function getAverageData(data, experimentIDs) {
     const experimentData = experimentIDs.map(id => data[id]);
-    if (experimentIDs.length == 0) {
-        console.log("no matching experiments were found, chart will not be changed.");
-        return;
-    }
-    // retrieve and separate the input and output data averages
     const averageInputData = {};
     const averageOutputData = {};
     Object.keys(experimentData[0].inputs).forEach(inputKey => {
@@ -360,12 +323,15 @@ function getAverageData(data, experimentIDs) {
         outputs: averageOutputData 
     };
 }
-
+/* re-generates bar charts based on current comparison selections and filters */
 function updateBarCharts(data, experimentIDs) {
+    if (experimentIDs.length == 0) {
+        console.log("no matching experiments, chart will not be updated.");
+        return;
+    }
     const experiment1 = document.getElementById("compare-choice-1").value;
     const experiment2 = document.getElementById("compare-choice-2").value;
-
-    // logic to update comparisons based on combos of user choices: unselected, average, or experiment
+    /* conditional logic for all possible user selections (unselected, average, experiment) */
     var data1 = null;
     var data2 = null;
     if (experiment1) {
@@ -374,19 +340,19 @@ function updateBarCharts(data, experimentIDs) {
     if (experiment2) {
         data2 = (experiment2 == "Filtered Average") ? getAverageData(data, experimentIDs) : data[experiment2];
     }
-    if ((data1 && data2) && (experiment1 != experiment2)) {
+    if ((data1 && data2) && (experiment1 != experiment2)) { // if both are selected, display a comparison chart
         createBarChart("input-chart", "Compared Inputs", data1.inputs, data2.inputs);
         createBarChart("output-chart", "Compared Outputs", data1.outputs, data2.outputs);
     } else {
         let singleData = null;
         let title = "";
-        if (data1) {
+        if (data1) { // if exactly one is selected, display sole data
             singleData = data1;
             title = `${experimentIdToName(experiment1)} `;
         } else if (data2) {
             singleData = data2;
             title = `${experimentIdToName(experiment2)} `;
-        } else {
+        } else { // if both are unselected, default to display filtered average
             singleData = getAverageData(data, experimentIDs);
             title = "Average ";
         }
@@ -394,16 +360,14 @@ function updateBarCharts(data, experimentIDs) {
         createBarChart("output-chart", title + "Outputs", singleData.outputs);
     }
 }
-/* create bar charts for data within containerID with given data */
+/* creates bar charts for data within containerID for given data */
 function createBarChart(containerID, title, data, data2 = null) {
     const width = 650;
     const height = 200;
     const mainMargins = { top: 40, right: 30, bottom: 80, left: 25 };
     const outlierMargins = { top: 40, right: 50, bottom: 80, left: 35 };
-
-    var outlierKey = containerID == "input-chart" ? "Oven Temperature" : "Viscosity";
-    if (data2) {
-        // create concatenated data object and filter outliers
+    var outlierKey = containerID == "input-chart" ? "Oven Temperature" : "Viscosity"; // filter outliers for separate chart
+    if (data2) { // if two datasets given, create concatenated data
         let mainData = Object.keys(data).map(key => ({
             key: key,
             value1: data[key],
@@ -427,10 +391,9 @@ function createBarChart(containerID, title, data, data2 = null) {
 
 /* graphing logic to graph a bar chart for a single set of data */
 function graphSingleChart(containerID, title, data, height, width, margin) {
-    // FIXME: bar animation instead of just clearing?
-    d3.select(`#${containerID}`).html(""); // Clear previous chart
+    d3.select(`#${containerID}`).html(""); // clear previous chart
 
-    // create SVG container in the given container element
+    /* create SVG container in the given container element */
     const svg = d3.select(`#${containerID}`)
         .append("svg")
         .attr("width", width + margin.left + margin.right)
@@ -438,11 +401,11 @@ function graphSingleChart(containerID, title, data, height, width, margin) {
         .append("g")
         .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    // declare x and y scales
+    /* declare x and y scales */
     const x = d3.scaleBand().domain(data.map(d => d[0])).range([0, width]).padding(0.2);
     const y = d3.scaleLinear().domain([0, d3.max(data, d => d[1])]).range([height, 0]);
 
-    // draw bars
+    /* draw bars */
     svg.selectAll(".bar")
         .data(data)
         .enter()
@@ -455,16 +418,15 @@ function graphSingleChart(containerID, title, data, height, width, margin) {
         .attr("fill", colorScheme[0])
         .attr("rx", 5) // round bar edges
         .attr("ry", 5)
-        // handle tooltip visibility on hover
+        /* handle tooltip visibility on hover */
         .on("mouseover", (event, d) => {
             tooltip.style("visibility", "visible").text(`${d[0]}: ${d[1]}`);
         })
         .on("mousemove", (event) => {
-            // make sure tooltip doesn't get cut off by the window
+            /* make sure tooltip doesn't get cut off by the window */
             let tooltipWidth = tooltip.node().offsetWidth;
             let pageX = event.pageX;
             let pageY = event.pageY;
-
             let leftPos = pageX + 10;
             if (leftPos + tooltipWidth > window.innerWidth) {
                 leftPos = pageX - tooltipWidth - 10; // if overflow, shift left
@@ -476,14 +438,14 @@ function graphSingleChart(containerID, title, data, height, width, margin) {
             tooltip.style("visibility", "hidden");
         });
 
-    // create x and y axes
+    /* create x and y axes */
     const xAxis = d3.create("svg:g")
         .attr("transform", `translate(0,${height})`)
         .call(d3.axisBottom(x));
     const yAxis = d3.create("svg:g")
         .call(d3.axisLeft(y));
 
-    // set color and thickness of axes
+    /* set color and thickness of axes */
     const lineColor = colorScheme[3];
     xAxis.select("path")
         .style("stroke", lineColor);
@@ -504,7 +466,7 @@ function graphSingleChart(containerID, title, data, height, width, margin) {
     svg.append(() => xAxis.node());
     svg.append(() => yAxis.node());
 
-    // create tooltip to display values on hover
+    /* create tooltip to display values on hover */
     const tooltip = d3.select("body").append("div")
         .attr("class", "tooltip")
         .style("position", "absolute")
@@ -513,8 +475,6 @@ function graphSingleChart(containerID, title, data, height, width, margin) {
         .style("border-radius", "5px")
         .style("padding", "5px")
         .style("visibility", "hidden");
-
-    // display title above graph
     svg.append("text")
         .attr("x", width / 2)
         .attr("y", -15)
@@ -526,26 +486,27 @@ function graphSingleChart(containerID, title, data, height, width, margin) {
 function graphDoubleChart(containerID, title, dataCombo, height, width, margin) {
     d3.select(`#${containerID}`).html(""); // clear previous chart
 
-    // create svg container
+    /* create SVG container in the given container element */
     const svg = d3.select(`#${containerID}`)
         .append("svg")
         .attr("width", width + margin.left + margin.right)
         .attr("height", height + margin.top + margin.bottom)
         .append("g")
         .attr("transform", `translate(${margin.left},${margin.top})`);
-    // declar x and y scales
+
+    /* declare x and y scales */
     const x = d3.scaleBand().domain(dataCombo.map(d => d.key)).range([0, width]).padding(0.2);
     const xSubgroup = d3.scaleBand().domain(["value1", "value2"]).range([0, x.bandwidth()]).padding(0.05); // add x subgroup for side-by-side bars
     const y = d3.scaleLinear().domain([0, d3.max(dataCombo, d => Math.max(d.value1, d.value2))]).range([height, 0]);
 
-    // create x and y axes
+    /* create x and y axes */
     const xAxis = d3.create("svg:g")
         .attr("transform", `translate(0,${height})`)
         .call(d3.axisBottom(x));
     const yAxis = d3.create("svg:g")
         .call(d3.axisLeft(y));
 
-    // set color and thickness of axes
+    /* set color and thickness of axes */
     const lineColor = "#b2b2b2";
     xAxis.select("path")
         .style("stroke", lineColor);
@@ -566,10 +527,9 @@ function graphDoubleChart(containerID, title, dataCombo, height, width, margin) 
     svg.append(() => xAxis.node());
     svg.append(() => yAxis.node());
 
+    const color = d3.scaleOrdinal().domain(["value1", "value2"]).range(colorScheme.slice(0, 2)); // set color scheme for datasets
 
-    const color = d3.scaleOrdinal().domain(["value1", "value2"]).range(colorScheme.slice(0, 2));
-
-    // create tooltip to display values on hover
+    /* create tooltip to display values on hover */
     const tooltip = d3.select("body").append("div")
         .attr("class", "tooltip")
         .style("position", "absolute")
@@ -578,7 +538,7 @@ function graphDoubleChart(containerID, title, dataCombo, height, width, margin) 
         .style("padding", "5px")
         .style("visibility", "hidden");
 
-    // draw bars
+    /* draw bars */
     svg.selectAll("g.bar-group")
         .data(dataCombo)
         .enter()
@@ -599,7 +559,7 @@ function graphDoubleChart(containerID, title, dataCombo, height, width, margin) 
         .attr("fill", d => color(d.key))
         .attr("rx", 5) // round bar edges
         .attr("ry", 5)
-        // handle tooltip visibility on hover
+        /* handle tooltip visibility on hover */
         .on("mouseover", (event, d) => {
             tooltip.style("visibility", "visible").text(`${d.label}: ${d.value}`);
             const barColor = d3.select(event.target).attr("fill");
@@ -608,11 +568,10 @@ function graphDoubleChart(containerID, title, dataCombo, height, width, margin) 
                 .style("border", `1px solid ${barColor}`);
         })
         .on("mousemove", (event) => {
-            // make sure tooltip doesn't get cut off by the window
+            /* make sure tooltip doesn't get cut off by the window */
             let tooltipWidth = tooltip.node().offsetWidth;
             let pageX = event.pageX;
             let pageY = event.pageY;
-
             let leftPos = pageX + 10;
             if (leftPos + tooltipWidth > window.innerWidth) {
                 leftPos = pageX - tooltipWidth - 10; // if overflow, shift left
@@ -623,7 +582,6 @@ function graphDoubleChart(containerID, title, dataCombo, height, width, margin) 
         .on("mouseout", () => {
             tooltip.style("visibility", "hidden");
         });
-    // display title above graph
     svg.append("text")
         .attr("x", width / 2)
         .attr("y", -15)
