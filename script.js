@@ -8,14 +8,12 @@ window.onload = function() {
         return response.json(); // parse json data as a JS object
     })
     .then(data => {
-        // load initial screen
         allExperiments = Object.keys(data);
         currFilteredIDs = allExperiments;
-        displayExperiments(data, allExperiments);
-        updateBarCharts(data, allExperiments);
         loadFilterMenu(data);
+        displayExperiments(data, allExperiments);
         loadCompareMenu(data, allExperiments);
-
+        updateBarCharts(data, allExperiments);
     })
     .catch(error => console.error("error while fetching data or displaying initial screen:", error));
 }
@@ -33,46 +31,23 @@ const inputTypesDict = {
     "Oven Temperature": []
 };
 
-/* global color scheme [primary, secondary, accent, lines] */
-const colorScheme = ["#4ea6fb", "#ed5186", "#027bff", "#b2b2b2"];
+/* global color scheme */
+const colorScheme = {
+    "primary" : "#4ea6fb", 
+    "secondary" : "#ed5186", 
+    "accent" : "#027bff", 
+    "lines" : "#b2b2b2"
+};
 
-var allExperiments; // for quick and easy access, a list of all the experiments
-var currFilteredIDs; // store the current filtered experiment ids globally, update when apply filters is run
+var allExperiments; // for quick access, a list of all the experiments
+var currFilteredIDs; // store the current filtered experiment ids globally, updated when apply filters is run
 
-/* load the selection options for comparing two experiments */
-function loadCompareMenu(data, experimentIDs) {
-    let choice1 = document.getElementById("compare-choice-1");
-    let choice2 = document.getElementById("compare-choice-2");
-    createSelectionDropdown(choice1, data, experimentIDs);
-    createSelectionDropdown(choice2, data, experimentIDs);
-}
-/* create a selection dropdown within container using options from experimentIDs */
-function createSelectionDropdown(container, data, experimentIDs) {
-    const avgOption = document.createElement("option");
-    avgOption.text = "Filtered Average";
-    avgOption.value = "Filtered Average";
-    container.appendChild(avgOption); // filtered average option is available as default
-    experimentIDs.forEach(experiment => {
-        let option = document.createElement("option");
-        option.text = experimentIdToName(experiment);
-        option.value = experiment;
-        container.appendChild(option);
-    });
-    container.addEventListener("change", () => {
-        if (container.value) {
-            container.style.color = "black";
-        } else {
-            container.style.color = colorScheme[3];
-        }
-        updateBarCharts(data, currFilteredIDs); // when an option is selected, bar charts are updated
-    });
-}
 /* load the filter selection menu, checkboxes and range inputs */
 function loadFilterMenu(data) {
     loadInputFilters();
     loadOutputFilters(Object.keys(Object.values(data)[0].outputs));
     const applyFiltersBtn = document.getElementById("apply-filters-btn");
-    applyFiltersBtn.style.backgroundColor = colorScheme[2];
+    applyFiltersBtn.style.backgroundColor = colorScheme["accent"];
     applyFiltersBtn.addEventListener("click", () => {
         applyFilters(data);
     });
@@ -196,6 +171,7 @@ function applyFilters(data) {
     displayExperiments(data, filteredExperimentIDs);
     updateBarCharts(data, filteredExperimentIDs);
 }
+
 /* displays the experiment list */
 function displayExperiments(data, experimentIDs) {
     const listDiv = document.getElementById("experiments-list");
@@ -307,6 +283,34 @@ function experimentIdToName(experimentID) {
     return `Experiment ${Number} (${Month}/${Day}/${Year})`;;
 }
 
+/* load the selection options for comparing two experiments */
+function loadCompareMenu(data, experimentIDs) {
+    let choice1 = document.getElementById("compare-choice-1");
+    let choice2 = document.getElementById("compare-choice-2");
+    createSelectionDropdown(choice1, data, experimentIDs);
+    createSelectionDropdown(choice2, data, experimentIDs);
+}
+/* create a selection dropdown within container using options from experimentIDs */
+function createSelectionDropdown(container, data, experimentIDs) {
+    const avgOption = document.createElement("option");
+    avgOption.text = "Filtered Average";
+    avgOption.value = "Filtered Average";
+    container.appendChild(avgOption); // filtered average option is available as default
+    experimentIDs.forEach(experiment => {
+        let option = document.createElement("option");
+        option.text = experimentIdToName(experiment);
+        option.value = experiment;
+        container.appendChild(option);
+    });
+    container.addEventListener("change", () => {
+        if (container.value) {
+            container.style.color = "black";
+        } else {
+            container.style.color = colorScheme["lines"];
+        }
+        updateBarCharts(data, currFilteredIDs); // when an option is selected, bar charts are updated
+    });
+}
 /* returns the average rounded data of a list of experiments */
 function getAverageData(data, experimentIDs) {
     const experimentData = experimentIDs.map(id => data[id]);
@@ -341,27 +345,29 @@ function updateBarCharts(data, experimentIDs) {
         data2 = (experiment2 == "Filtered Average") ? getAverageData(data, experimentIDs) : data[experiment2];
     }
     if ((data1 && data2) && (experiment1 != experiment2)) { // if both are selected, display a comparison chart
-        createBarChart("input-chart", "Compared Inputs", data1.inputs, data2.inputs);
-        createBarChart("output-chart", "Compared Outputs", data1.outputs, data2.outputs);
+        createBarChart("input-chart", "Compared Inputs", "primary", data1.inputs, data2.inputs);
+        createBarChart("output-chart", "Compared Outputs", "primary", data1.outputs, data2.outputs);
     } else {
         let singleData = null;
         let title = "";
+        let color = "primary";
         if (data1) { // if exactly one is selected, display sole data
             singleData = data1;
             title = `${experimentIdToName(experiment1)} `;
         } else if (data2) {
             singleData = data2;
             title = `${experimentIdToName(experiment2)} `;
+            color = "secondary";
         } else { // if both are unselected, default to display filtered average
             singleData = getAverageData(data, experimentIDs);
             title = "Average ";
         }
-        createBarChart("input-chart", title + "Inputs", singleData.inputs);
-        createBarChart("output-chart", title + "Outputs", singleData.outputs);
+        createBarChart("input-chart", title + "Inputs", color, singleData.inputs);
+        createBarChart("output-chart", title + "Outputs", color, singleData.outputs);
     }
 }
 /* creates bar charts for data within containerID for given data */
-function createBarChart(containerID, title, data, data2 = null) {
+function createBarChart(containerID, title, color, data, data2 = null) {
     const width = 650;
     const height = 200;
     const mainMargins = { top: 40, right: 30, bottom: 80, left: 25 };
@@ -384,13 +390,13 @@ function createBarChart(containerID, title, data, data2 = null) {
         let d3Data = Object.entries(data);
         let mainData = d3Data.filter(([key]) => key != outlierKey);
         let outlierData = d3Data.filter(([key]) => key == outlierKey);
-        graphSingleChart(`${containerID}-main`, title, mainData, height, width * 0.9, mainMargins);
-        graphSingleChart(`${containerID}-outlier`, "", outlierData, height, width * 0.1, outlierMargins);   
+        graphSingleChart(`${containerID}-main`, title, color, mainData, height, width * 0.9, mainMargins);
+        graphSingleChart(`${containerID}-outlier`, "", color, outlierData, height, width * 0.1, outlierMargins);   
     }
 }
 
 /* graphing logic to graph a bar chart for a single set of data */
-function graphSingleChart(containerID, title, data, height, width, margin) {
+function graphSingleChart(containerID, title, color, data, height, width, margin) {
     d3.select(`#${containerID}`).html(""); // clear previous chart
 
     /* create SVG container in the given container element */
@@ -415,7 +421,7 @@ function graphSingleChart(containerID, title, data, height, width, margin) {
         .attr("y", d => y(d[1]))
         .attr("width", x.bandwidth())
         .attr("height", d => height - y(d[1]))
-        .attr("fill", colorScheme[0])
+        .attr("fill", colorScheme[color])
         .attr("rx", 5) // round bar edges
         .attr("ry", 5)
         /* handle tooltip visibility on hover */
@@ -446,7 +452,7 @@ function graphSingleChart(containerID, title, data, height, width, margin) {
         .call(d3.axisLeft(y));
 
     /* set color and thickness of axes */
-    const lineColor = colorScheme[3];
+    const lineColor = colorScheme["lines"];
     xAxis.select("path")
         .style("stroke", lineColor);
     yAxis.select("path")
@@ -471,7 +477,7 @@ function graphSingleChart(containerID, title, data, height, width, margin) {
         .attr("class", "tooltip")
         .style("position", "absolute")
         .style("background", "white")
-        .style("border", `1px solid ${colorScheme[0]}`)
+        .style("border", `1px solid ${colorScheme["primary"]}`)
         .style("border-radius", "5px")
         .style("padding", "5px")
         .style("visibility", "hidden");
@@ -527,7 +533,7 @@ function graphDoubleChart(containerID, title, dataCombo, height, width, margin) 
     svg.append(() => xAxis.node());
     svg.append(() => yAxis.node());
 
-    const color = d3.scaleOrdinal().domain(["value1", "value2"]).range(colorScheme.slice(0, 2)); // set color scheme for datasets
+    const color = d3.scaleOrdinal().domain(["value1", "value2"]).range([colorScheme["primary"], colorScheme["secondary"]]); // set color scheme for datasets
 
     /* create tooltip to display values on hover */
     const tooltip = d3.select("body").append("div")
