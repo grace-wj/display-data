@@ -4,100 +4,153 @@
     box-sizing: border-box;
 }
 body {
-    font-family: Arial, sans-serif;
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
+    color: #383838;
+}
+body, button, select {
+    font-family: "jali-latin-variable", sans-serif;
 }
 
 /* containers formatting */
-
 #filters-container {
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: 20px;
-    width: 30%;
+    align-items: center;
+    padding: 30px;
+    width: 25%;
     height: 100vh;
 }
 #experiments-container {
+    padding: 30px;
+    padding-left: 0;
     display: flex;
     flex-direction: column;
     width: 20%;
     height: 100vh;
 }
 #charts-container {
+    padding-top: 30px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    width: 50%;
+    width: 55%;
+    height: 100vh;
+}
+/* remove charts from layout when window is too narrow */
+@media (max-width: 1200px) {
+    #filters-container {
+        width: 50%;
+    }
+    #experiments-container {
+        width: 50%;
+    }
+    #charts-container {
+        display: none;
+    }
 }
 
 /* filter list styling */
-/* FIXME: display inputs and outputs similarly to the experiment layout, separating types */
+#apply-filters-btn {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 40px;
+    width: 100%;
+    border-radius: 7px;
+
+    cursor: pointer;
+    font-size: 17px;
+    color: white;
+}
 #input-filters {
-    height: 500px;
+    width: 100%;
+    margin-top: 20px;
+    margin-bottom: 20px;
     overflow-y: auto;
-    border: 1px solid #ccc;
+    border: 1px solid #b2b2b2;
     border-radius: 5px;
 }
 #output-filters {
-    height: 150px;
-    overflow-y: auto;
-    border: 1px solid #ccc;
+    width: 100%;
+    min-height: 130px;
+    overflow-y: hidden;
+    border: 1px solid #b2b2b2;
     border-radius: 5px;
 }
-
+.filter-option {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-left: 10px;
+    padding-top: 4px;
+    padding-bottom: 3px;
+    border-bottom: 1px dotted #b2b2b2;
+}
+.filter-type {
+    padding-top: 4px;
+    padding-bottom: 3px;
+    margin-left: 10px;
+    border-bottom: 1px dotted #b2b2b2;
+}
+.filter-subtype {
+    padding-left: 20px;
+}
 .filter-label {
     margin-left: 5px;
-    cursor: pointer;
 }
-
-.filter-item {
-    display: flex;
-    align-items: center;
-    gap: 5px; /* Adds spacing between elements */
-    margin-bottom: 5px;
+.filter-checkbox {
+    cursor: pointer;
 }
 .range-container {
     display: flex;
-    gap: 5px; /* Space between min and max inputs */
+    align-items: center;
+    justify-content: space-around;
+    height: 100%;
+    width: 100%;
+    max-width: 170px;
 }
-
 .min-input, .max-input {
-    width: 60px; /* Adjust width as needed */
-    height: 16px;
-    padding: 5px;
+    font-family: "jali-latin-variable", sans-serif;
+    width: 45%;
+    min-width: 20px;
+    height: 100%;
 }
 
 /* experiments list styling */
 #experiments-count {
-    font-weight: bold;
+    min-height: 40px;
     display: flex;
+    justify-content: center;
     align-items: center;
-    margin-top: 20px;
-    margin-bottom: 5px;
+
+    font-size: 17px;
+    color: #919191;
 }
 #experiments-list {
     display: flex;
     flex-direction: column;
     overflow-y: auto;
     width: 100%;
-    margin-bottom: 20px;
-
-    border: 2px solid darkslategrey;
-    border-radius: 10px;
-
-    background-color: lightpink;
+    margin-top: 20px;
+    border-top: 1px dotted #b2b2b2;
+    border-bottom: 1px dotted #b2b2b2;
+    border-radius: 10px;   
+}
+#experiments-list::-webkit-scrollbar {
+    display: none;
 }
 .experiment {
-    border: 2px solid darkslategrey;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.15);
     border-radius: 10px;
-
     padding: 20px;
     margin: 5px;
-    background-color: white;
+}
+.experiment-title {
+    padding-bottom: 10px;
 }
 .dropdown-content {
     height: 0;
@@ -105,33 +158,114 @@ body {
     transition: height 0.3s ease-out;
 }
 .dropdown-btn {
-    font-weight: bolder;
-    padding-top: 5px;
+    display: flex;
+    padding-bottom: 5px;
     cursor: pointer;
-    border-bottom: 1px solid #ccc;
     margin-top: 10px;
+    position: relative;
+}
+.dropdown-btn::after {
+    content: "";
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    margin-left: 10px;
+    margin-top: 3px;
+    border: solid #b2b2b2;
+    border-width: 1.5px 1.5px 0 0;
+    transform: rotate(135deg);
+    transition: transform 0.3s ease;
+    position: absolute;
+    left: 90%;
+}
+.dropdown-btn.expanded::after {
+    transform: rotate(-45deg);
+}
+.dropdown-content p {
+    color: #919191;
 }
 .property-entry {
     padding-top: 5px;
     margin-left: 10px;
     display: flex;
     justify-content: space-between;
-    border-bottom: 1px solid #ccc;
-}
-.dropdown-content p {
-    color: darkslategrey;
+    border-bottom: 1px dotted #b2b2b2;
 }
 .type-entry {
     margin-top: 5px;
     margin-left: 10px;
-    border-bottom: 2px solid #ccc;
+    border-bottom: 1px dotted #b2b2b2;
 }
 .subproperty-entry {
     padding-left: 20px;
 }
 
-/* charting selection menu */
-
+/* chart container styling */
+#input-chart, #output-chart {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
 #selection-menu {
-    margin-top: 20px;
+    padding-bottom: 50px;
+    height: 10%;
+}
+
+.compare-label {
+    margin-left: 20px;
+    margin-right: 20px;
+    color: #919191;
+}
+select {
+    width: 250px;
+    appearance: none;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 10px;
+    font-size: 16px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    cursor: pointer;
+    border: 2px solid rgba(0, 0, 0, 0);
+    
+    color: #b2b2b2;
+}
+#compare-choice-1:hover {
+    border: 2px solid #4ea6fb;
+}
+#compare-choice-2:hover {
+    border: 2px solid #ed5186;
+}
+select:focus {
+    outline: none; 
+  }
+.select-wrapper {
+    position: relative;
+    display: inline-block;
+}
+.select-wrapper::after {
+    content: "";
+    width: 7px;
+    height: 7px;
+    border: solid #b2b2b2;
+    border-width: 1.5px 1.5px 0 0;
+    transform: rotate(135deg);
+    position: absolute;
+    right: 15px;
+    top: 32%;
+
+    pointer-events: none;
+}
+/* 
+select {
+    appearance: none;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    padding: 8px 12px;
+    font-size: 16px;
+    cursor: pointer;
+} */
+
+/* Define the clip path in CSS */
+.clip-top-rounded {
+    clip-path: polygon(0% 0%, 100% 0%, 100% 100%, 0% 100%);
 }
