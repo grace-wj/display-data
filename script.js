@@ -20,14 +20,14 @@ window.onload = function() {
 
 /* map input types to their subtypes */
 const inputTypesDict = {
-    "Polymer" : ["1", "2", "3", "4"],
+    "Compound" : ["1", "2", "3", "4"],
     "Carbon Black": ["High Grade", "Low Grade"],
-    "Silica Filler": ["1", "2"],
-    "Plasticizer": ["1", "2", "3"],
-    "Antioxidant": [],
-    "Coloring Pigment": [],
-    "Co-Agent": ["1", "2", "3"],
-    "Curing": ["Agent 1", "Agent 2"],
+    "Binding Agent": ["1", "2"],
+    "Modifier": ["Strong", "Medium", "Weak"],
+    "Stabilizer": [],
+    "Dye Pigment": [],
+    "Catalyst": ["1", "2", "3"],
+    "Reactant": ["1", "2"],
     "Oven Temperature": []
 };
 
@@ -41,6 +41,8 @@ const colorScheme = {
 
 var allExperiments; // for quick access, a list of all the experiments
 var currFilteredIDs; // store the current filtered experiment ids globally, updated when apply filters is run
+
+var graphIsDouble = false; // track what kind of graph is currently displayed
 
 /* load the filter selection menu, checkboxes and range inputs */
 function loadFilterMenu(data) {
@@ -347,6 +349,7 @@ function updateBarCharts(data, experimentIDs) {
     if ((data1 && data2) && (experiment1 != experiment2)) { // if both are selected, display a comparison chart
         createBarChart("input-chart", "Compared Inputs", "primary", data1.inputs, data2.inputs);
         createBarChart("output-chart", "Compared Outputs", "primary", data1.outputs, data2.outputs);
+        graphIsDouble = true;
     } else {
         let singleData = null;
         let title = "";
@@ -364,6 +367,7 @@ function updateBarCharts(data, experimentIDs) {
         }
         createBarChart("input-chart", title + "Inputs", color, singleData.inputs);
         createBarChart("output-chart", title + "Outputs", color, singleData.outputs);
+        graphIsDouble = false;
     }
 }
 /* creates bar charts for data within containerID for given data */
@@ -372,7 +376,7 @@ function createBarChart(containerID, title, color, data, data2 = null) {
     const height = 200;
     const mainMargins = { top: 40, right: 30, bottom: 80, left: 25 };
     const outlierMargins = { top: 40, right: 50, bottom: 80, left: 35 };
-    var outlierKey = containerID == "input-chart" ? "Oven Temperature" : "Viscosity"; // filter outliers for separate chart
+    var outlierKey = containerID == "input-chart" ? "Oven Temperature" : "Flow Resistance"; // filter outliers for separate chart
     if (data2) { // if two datasets given, create concatenated data
         let mainData = Object.keys(data).map(key => ({
             key: key,
@@ -394,178 +398,212 @@ function createBarChart(containerID, title, color, data, data2 = null) {
         graphSingleChart(`${containerID}-outlier`, "", color, outlierData, height, width * 0.1, outlierMargins);   
     }
 }
-
 /* graphing logic to graph a bar chart for a single set of data */
 function graphSingleChart(containerID, title, color, data, height, width, margin) {
-    d3.select(`#${containerID}`).html(""); // clear previous chart
+    const svgContainer = d3.select(`#${containerID}`);
+    let svg = svgContainer.select("svg");
 
-    /* create SVG container in the given container element */
-    const svg = d3.select(`#${containerID}`)
-        .append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
-        .append("g")
-        .attr("transform", `translate(${margin.left},${margin.top})`);
+    /* if this is initial graph or previous graph was double */
+    if (svg.empty() || graphIsDouble) {
+        svgContainer.html(""); // clear and create new single graph
+        svg = svgContainer.append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    /* declare x and y scales */
+        /* x-axis and y-axis groups */
+        svg.append("g").attr("class", "x-axis").attr("transform", `translate(0,${height})`);
+        svg.append("g").attr("class", "y-axis");
+        svg.append("text") // title
+            .attr("class", "chart-title")
+            .attr("x", width / 2)
+            .attr("y", -15)
+            .attr("text-anchor", "middle")
+            .style("font-size", "16px");
+    }
+    /* define x and y scales */
     const x = d3.scaleBand().domain(data.map(d => d[0])).range([0, width]).padding(0.2);
-    const y = d3.scaleLinear().domain([0, d3.max(data, d => d[1])]).range([height, 0]);
+    const y = d3.scaleLinear().domain([0, d3.max(data, d => d[1])]).nice().range([height, 0]);
 
-    /* draw bars */
-    svg.selectAll(".bar")
-        .data(data)
-        .enter()
+    /* update axes */
+    svg.select(".x-axis")
+        .transition().duration(750)
+        .call(d3.axisBottom(x))
+        .selectAll("text")
+        .attr("transform", "rotate(-40)")
+        .style("text-anchor", "end")
+        .style("font-family", "jali-latin-variable")
+        .style("color", colorScheme["lines"]);
+    svg.select(".y-axis")
+        .transition().duration(750)
+        .call(d3.axisLeft(y))
+        .selectAll("text")
+        .style("font-family", "jali-latin-variable")
+        .style("color", colorScheme["lines"]);
+
+    /* style axes line colors */
+    svg.select(".y-axis").selectAll("line, path").style("stroke", colorScheme["lines"]);
+    svg.select(".x-axis").selectAll("line, path").style("stroke", colorScheme["lines"]);
+
+    /* update bar data */
+    const bars = svg.selectAll(".bar")
+        .data(data, d => d[0]);
+    bars.enter()
         .append("rect")
         .attr("class", "bar")
         .attr("x", d => x(d[0]))
-        .attr("y", d => y(d[1]))
+        .attr("y", height)
         .attr("width", x.bandwidth())
-        .attr("height", d => height - y(d[1]))
+        .attr("height", 0)
         .attr("fill", colorScheme[color])
-        .attr("rx", 5) // round bar edges
-        .attr("ry", 5)
-        /* handle tooltip visibility on hover */
+        .attr("rx", 5).attr("ry", 5)
+        .merge(bars)
+        .transition().duration(750)
+        .attr("y", d => y(d[1]))
+        .attr("height", d => height - y(d[1]));
+    bars.exit()
+        .transition().duration(750)
+        .attr("y", height)
+        .attr("height", 0)
+        .remove();
+
+    svg.select(".chart-title")
+        .transition().duration(750)
+        .text(title);
+
+    /* create tooltip to display values on hover */
+    let tooltip = d3.select("body").select(".tooltip");
+    if (tooltip.empty()) {
+        tooltip = d3.select("body").append("div")
+            .attr("class", "tooltip")
+            .style("position", "absolute")
+            .style("background", "white")
+            .style("border", `1px solid ${colorScheme["primary"]}`)
+            .style("border-radius", "5px")
+            .style("padding", "5px")
+            .style("visibility", "hidden");
+    }
+    svg.selectAll(".bar")
         .on("mouseover", (event, d) => {
             tooltip.style("visibility", "visible").text(`${d[0]}: ${d[1]}`);
         })
         .on("mousemove", (event) => {
-            /* make sure tooltip doesn't get cut off by the window */
             let tooltipWidth = tooltip.node().offsetWidth;
             let pageX = event.pageX;
             let pageY = event.pageY;
             let leftPos = pageX + 10;
             if (leftPos + tooltipWidth > window.innerWidth) {
-                leftPos = pageX - tooltipWidth - 10; // if overflow, shift left
+                leftPos = pageX - tooltipWidth - 10; // Shift left if overflow
             }
-            tooltip.style("top", `${pageY - 10}px`)
-                .style("left", `${leftPos}px`);
+            tooltip.style("top", `${pageY - 10}px`).style("left", `${leftPos}px`);
         })
         .on("mouseout", () => {
             tooltip.style("visibility", "hidden");
         });
-
-    /* create x and y axes */
-    const xAxis = d3.create("svg:g")
-        .attr("transform", `translate(0,${height})`)
-        .call(d3.axisBottom(x));
-    const yAxis = d3.create("svg:g")
-        .call(d3.axisLeft(y));
-
-    /* set color and thickness of axes */
-    const lineColor = colorScheme["lines"];
-    xAxis.select("path")
-        .style("stroke", lineColor);
-    yAxis.select("path")
-        .style("stroke", lineColor);
-    xAxis.selectAll("line")
-        .style("stroke", lineColor);
-    yAxis.selectAll("line")
-        .style("stroke", lineColor);
-    xAxis.selectAll("text")
-        .attr("transform", "rotate(-40)")
-        .style("text-anchor", "end")
-        .style("font-family", "jali-latin-variable")
-        .style("color", lineColor);
-    yAxis.selectAll("text")
-        .style("font-family", "jali-latin-variable")
-        .style("color", lineColor);
-    svg.append(() => xAxis.node());
-    svg.append(() => yAxis.node());
-
-    /* create tooltip to display values on hover */
-    const tooltip = d3.select("body").append("div")
-        .attr("class", "tooltip")
-        .style("position", "absolute")
-        .style("background", "white")
-        .style("border", `1px solid ${colorScheme["primary"]}`)
-        .style("border-radius", "5px")
-        .style("padding", "5px")
-        .style("visibility", "hidden");
-    svg.append("text")
-        .attr("x", width / 2)
-        .attr("y", -15)
-        .attr("text-anchor", "middle")
-        .style("font-size", "16px")
-        .text(title);
 }
 /* graphing logic to graph a bar chart to compare two sets of data */
 function graphDoubleChart(containerID, title, dataCombo, height, width, margin) {
-    d3.select(`#${containerID}`).html(""); // clear previous chart
+    const svgContainer = d3.select(`#${containerID}`);
+    let svg = svgContainer.select("svg");
 
-    /* create SVG container in the given container element */
-    const svg = d3.select(`#${containerID}`)
-        .append("svg")
-        .attr("width", width + margin.left + margin.right)
-        .attr("height", height + margin.top + margin.bottom)
-        .append("g")
-        .attr("transform", `translate(${margin.left},${margin.top})`);
+    /* If previous graph was single */
+    if (!graphIsDouble) {
+        svgContainer.html(""); // clear and create new double graph
+        svg = svgContainer.append("svg")
+            .attr("width", width + margin.left + margin.right)
+            .attr("height", height + margin.top + margin.bottom)
+            .append("g")
+            .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    /* declare x and y scales */
-    const x = d3.scaleBand().domain(dataCombo.map(d => d.key)).range([0, width]).padding(0.2);
-    const xSubgroup = d3.scaleBand().domain(["value1", "value2"]).range([0, x.bandwidth()]).padding(0.05); // add x subgroup for side-by-side bars
-    const y = d3.scaleLinear().domain([0, d3.max(dataCombo, d => Math.max(d.value1, d.value2))]).range([height, 0]);
+        /* x-axis and y-axis groups */
+        svg.append("g").attr("class", "x-axis").attr("transform", `translate(0,${height})`);
+        svg.append("g").attr("class", "y-axis");
+    }
+    /* define x and y scales */
+    const x = d3.scaleBand()
+        .domain(dataCombo.map(d => d.key))
+        .range([0, width])
+        .padding(0.2);
+    const xSubgroup = d3.scaleBand()
+        .domain(["value1", "value2"])
+        .range([0, x.bandwidth()])
+        .padding(0.05);
+    const y = d3.scaleLinear()
+        .domain([0, d3.max(dataCombo, d => Math.max(d.value1 || 0, d.value2 || 0))])
+        .nice()
+        .range([height, 0]);
 
-    /* create x and y axes */
-    const xAxis = d3.create("svg:g")
-        .attr("transform", `translate(0,${height})`)
-        .call(d3.axisBottom(x));
-    const yAxis = d3.create("svg:g")
-        .call(d3.axisLeft(y));
-
-    /* set color and thickness of axes */
-    const lineColor = "#b2b2b2";
-    xAxis.select("path")
-        .style("stroke", lineColor);
-    yAxis.select("path")
-        .style("stroke", lineColor);
-    xAxis.selectAll("line")
-        .style("stroke", lineColor);
-    yAxis.selectAll("line")
-        .style("stroke", lineColor);
-    xAxis.selectAll("text")
+    /* update axes */
+    svg.select(".x-axis")
+        .transition().duration(500)
+        .call(d3.axisBottom(x))
+        .selectAll("text")
         .attr("transform", "rotate(-40)")
         .style("text-anchor", "end")
         .style("font-family", "jali-latin-variable")
-        .style("color", lineColor);
-    yAxis.selectAll("text")
-        .style("font-family", "jali-latin-variable")
-        .style("color", lineColor);
-    svg.append(() => xAxis.node());
-    svg.append(() => yAxis.node());
+        .style("color", "#b2b2b2");
 
-    const color = d3.scaleOrdinal().domain(["value1", "value2"]).range([colorScheme["primary"], colorScheme["secondary"]]); // set color scheme for datasets
+    svg.select(".y-axis")
+        .transition().duration(500)
+        .call(d3.axisLeft(y))
+        .selectAll("text")
+        .style("color", "#b2b2b2");
+
+    /* style axes line colors */
+    svg.select(".y-axis").selectAll("line, path").style("stroke", colorScheme["lines"]);
+    svg.select(".x-axis").selectAll("line, path").style("stroke", colorScheme["lines"]);
+
+    const color = d3.scaleOrdinal()
+        .domain(["value1", "value2"])
+        .range([colorScheme["primary"], colorScheme["secondary"]]);
 
     /* create tooltip to display values on hover */
-    const tooltip = d3.select("body").append("div")
-        .attr("class", "tooltip")
-        .style("position", "absolute")
-        .style("background", "white")
-        .style("border-radius", "5px")
-        .style("padding", "5px")
-        .style("visibility", "hidden");
+    const tooltip = d3.select(".tooltip");
+    if (tooltip.empty()) {
+        d3.select("body").append("div")
+            .attr("class", "tooltip")
+            .style("position", "absolute")
+            .style("background", "white")
+            .style("border-radius", "5px")
+            .style("padding", "5px")
+            .style("visibility", "hidden");
+    }
 
-    /* draw bars */
-    svg.selectAll("g.bar-group")
-        .data(dataCombo)
-        .enter()
+    /* join data and update groups */
+    const groups = svg.selectAll(".bar-group")
+        .data(dataCombo, d => d.key);
+    groups.exit()
+        .transition().duration(500)
+        .style("opacity", 0)
+        .remove();
+    const newGroups = groups.enter()
         .append("g")
         .attr("class", "bar-group")
-        .attr("transform", d => `translate(${x(d.key)},0)`)
-        .selectAll("rect")
+        .attr("transform", d => `translate(${x(d.key)},0)`);
+    const mergedGroups = newGroups.merge(groups);
+    mergedGroups.transition().duration(500)
+        .attr("transform", d => `translate(${x(d.key)},0)`);
+
+    /* update bar data */
+    const bars = mergedGroups.selectAll("rect")
         .data(d => [
-            { key: "value1", value: d.value1, label: d.key },
-            { key: "value2", value: d.value2, label: d.key }
-        ])
-        .enter()
+            { key: "value1", value: d.value1 || 0, label: d.key },
+            { key: "value2", value: d.value2 || 0, label: d.key }
+        ]);
+    bars.exit()
+        .transition().duration(500)
+        .style("opacity", 0)
+        .remove();
+    const newBars = bars.enter()
         .append("rect")
         .attr("x", d => xSubgroup(d.key))
-        .attr("y", d => y(d.value))
+        .attr("y", height)
         .attr("width", xSubgroup.bandwidth())
-        .attr("height", d => height - y(d.value))
+        .attr("height", 0)
         .attr("fill", d => color(d.key))
-        .attr("rx", 5) // round bar edges
+        .attr("rx", 5)
         .attr("ry", 5)
-        /* handle tooltip visibility on hover */
         .on("mouseover", (event, d) => {
             tooltip.style("visibility", "visible").text(`${d.label}: ${d.value}`);
             const barColor = d3.select(event.target).attr("fill");
@@ -574,24 +612,37 @@ function graphDoubleChart(containerID, title, dataCombo, height, width, margin) 
                 .style("border", `1px solid ${barColor}`);
         })
         .on("mousemove", (event) => {
-            /* make sure tooltip doesn't get cut off by the window */
             let tooltipWidth = tooltip.node().offsetWidth;
             let pageX = event.pageX;
             let pageY = event.pageY;
             let leftPos = pageX + 10;
             if (leftPos + tooltipWidth > window.innerWidth) {
-                leftPos = pageX - tooltipWidth - 10; // if overflow, shift left
+                leftPos = pageX - tooltipWidth - 10;
             }
             tooltip.style("top", `${pageY - 10}px`)
-                .style("left", `${leftPos}px`)
+                .style("left", `${leftPos}px`);
         })
         .on("mouseout", () => {
             tooltip.style("visibility", "hidden");
         });
-    svg.append("text")
-        .attr("x", width / 2)
-        .attr("y", -15)
-        .attr("text-anchor", "middle")
-        .style("font-size", "16px")
-        .text(title);
+    newBars.merge(bars)
+        .transition().duration(500)
+        .attr("x", d => xSubgroup(d.key))
+        .attr("y", d => y(d.value))
+        .attr("width", xSubgroup.bandwidth())
+        .attr("height", d => height - y(d.value))
+        .attr("fill", d => color(d.key));
+
+    const titleText = svg.select(".chart-title");
+    if (titleText.empty()) {
+        svg.append("text")
+            .attr("class", "chart-title")
+            .attr("x", width / 2)
+            .attr("y", -15)
+            .attr("text-anchor", "middle")
+            .style("font-size", "16px")
+            .text(title);
+    } else {
+        titleText.text(title);
+    }
 }
